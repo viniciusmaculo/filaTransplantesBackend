@@ -1,0 +1,36 @@
+{
+  "estado": "SP",
+  "orgaos": [
+    "rim"
+  ],
+  "transacoes_por_orgao": 10,
+  "tempo_total_seg": 3.006,
+  "total_transacoes": 10,
+  "throughput_tx_s": 3.327,
+  "media_create_ms_por_orgao": {
+    "rim": null
+  },
+  "media_transfer_ms_por_orgao": {
+    "rim": 290.20055000074206
+  },
+  "create_latencias": {
+    "rim": [
+      null
+    ]
+  },
+  "transfer_latencias": {
+    "rim": [
+      282.4810000024736,
+      259.82580000162125,
+      273.2030000016093,
+      264.05849999934435,
+      287.90949999913573,
+      294.464999999851,
+      299.83550000190735,
+      332.3601000010967,
+      295.3436999991536,
+      312.52340000122786
+    ]
+  },
+  "erros": []
+}

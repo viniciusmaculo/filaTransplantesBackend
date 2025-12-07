@@ -1,0 +1,27 @@
+{
+  "estado": "RJ",
+  "orgaos": [
+    "rim",
+    "figado",
+    "coracao",
+    "pulmao"
+  ],
+  "tempo_total_seg": 0.718,
+  "total_transacoes": 4,
+  "throughput_tx_s": 5.57,
+  "media_create_ms": null,
+  "media_transfer_ms": 402.396,
+  "latencias_create": [
+    null,
+    null,
+    null,
+    null
+  ],
+  "latencias_transfer": [
+    277.0076999999583,
+    442.78830000013113,
+    443.1464999988675,
+    446.6412000004202
+  ],
+  "erros": []
+}

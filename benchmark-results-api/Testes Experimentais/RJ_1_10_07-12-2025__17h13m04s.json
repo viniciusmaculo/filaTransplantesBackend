@@ -1,0 +1,36 @@
+{
+  "estado": "RJ",
+  "orgaos": [
+    "rim"
+  ],
+  "transacoes_por_orgao": 10,
+  "tempo_total_seg": 3.358,
+  "total_transacoes": 10,
+  "throughput_tx_s": 2.978,
+  "media_create_ms_por_orgao": {
+    "rim": null
+  },
+  "media_transfer_ms_por_orgao": {
+    "rim": 321.8455299999565
+  },
+  "create_latencias": {
+    "rim": [
+      null
+    ]
+  },
+  "transfer_latencias": {
+    "rim": [
+      291.8674000017345,
+      299.8582000024617,
+      303.0663999989629,
+      311.59269999712706,
+      316.14599999785423,
+      315.47310000285506,
+      328.59219999983907,
+      335.85909999907017,
+      324.04540000110865,
+      391.9547999985516
+    ]
+  },
+  "erros": []
+}

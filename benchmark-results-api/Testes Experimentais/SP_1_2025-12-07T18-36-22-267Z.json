@@ -1,0 +1,18 @@
+{
+  "estado": "SP",
+  "orgaos": [
+    "rim"
+  ],
+  "tempo_total_seg": 0.549,
+  "total_transacoes": 1,
+  "throughput_tx_s": 1.822,
+  "media_create_ms": null,
+  "media_transfer_ms": 508.865,
+  "latencias_create": [
+    null
+  ],
+  "latencias_transfer": [
+    508.86549999937415
+  ],
+  "erros": []
+}

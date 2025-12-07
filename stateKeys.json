@@ -1,0 +1,18 @@
+{
+  "RJ": {
+    "publicKey": "BsSbMW9UtuS2sxounYfgCnBCGgdk1XRj2NoxcvdQYUiH",
+    "privateKey": "6kAqM91etgXmx9bvksd3i93awLbnvPqQ1ReT1pt27Dkr"
+  },
+  "SP": {
+    "publicKey": "C2Mk8AyzthsrFFjHrRj9kytjx791dCPqZU1YK926koms",
+    "privateKey": "8UrCGdz3J4A51ktMaWpuQxvoZk5vBnpX62s6BwyhYRPU"
+  },
+  "MG": {
+    "publicKey": "AoJ6ZW6jX9DuYf6XqNBfAWDU4GpVMLf3tD4MZXCNQpN4",
+    "privateKey": "8M4Y4X5t4cdC3MPY2TKi2FEpsdsE7XLJNxSoW2fTfrfi"
+  },
+  "ES": {
+    "publicKey": "14CiHBPuiv55UndrdNGx1To8gFVZxwDHYvAo4k5VQu1V",
+    "privateKey": "2FJZKP7uLmy77C9bXHcXxWySuKqvCznMmfUynNELdPNu"
+  }
+}

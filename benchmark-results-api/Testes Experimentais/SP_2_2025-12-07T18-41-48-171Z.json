@@ -1,0 +1,21 @@
+{
+  "estado": "SP",
+  "orgaos": [
+    "rim",
+    "figado"
+  ],
+  "tempo_total_seg": 0.944,
+  "total_transacoes": 3,
+  "throughput_tx_s": 3.177,
+  "media_create_ms": 588.136,
+  "media_transfer_ms": 319.964,
+  "latencias_create": [
+    null,
+    588.1356999985874
+  ],
+  "latencias_transfer": [
+    376.77939999848604,
+    263.14800000190735
+  ],
+  "erros": []
+}

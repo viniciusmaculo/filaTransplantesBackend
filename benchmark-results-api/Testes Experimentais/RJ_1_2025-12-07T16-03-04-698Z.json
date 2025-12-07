@@ -1,0 +1,18 @@
+{
+  "estado": "RJ",
+  "orgaos": [
+    "rim"
+  ],
+  "tempo_total_seg": 0.393,
+  "total_transacoes": 1,
+  "throughput_tx_s": 2.542,
+  "media_create_ms": null,
+  "media_transfer_ms": 305.792,
+  "latencias_create": [
+    null
+  ],
+  "latencias_transfer": [
+    305.7924000006169
+  ],
+  "erros": []
+}
