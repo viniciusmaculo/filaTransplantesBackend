@@ -106,7 +106,8 @@ async function addPatient(estado, orgao, cpf, nome, usuario) {
   // Busca o asset correspondente (estado + orgao)
   let asset = await findAssetByStateAndOrgan(estado, orgao);
 
-  const lastTx = await getLastTransaction(asset.id);
+  // Buscar última versão da fila
+  const lastTx = await getLastTransaction(estado, orgao);
 
   const fila = lastTx.metadata?.fila || [];
 
@@ -155,7 +156,7 @@ async function callPatientByPosition(estado, orgao, position, usuario) {
   const asset = await findAssetByStateAndOrgan(estado, orgao);
   if (!asset) return { error: "Asset não encontrado" };
 
-  const lastTx = await getLastTransaction(asset.id);
+  const lastTx = await getLastTransaction(estado, orgao);
 
   const fila = lastTx.metadata?.fila ? [...lastTx.metadata.fila] : [];
 
@@ -213,7 +214,7 @@ async function callNextPatient(estado, orgao, usuario) {
   const asset = await findAssetByStateAndOrgan(estado, orgao);
   if (!asset) return { error: "Asset não encontrado" };
 
-  const lastTx = await getLastTransaction(asset.id);
+  const lastTx = await getLastTransaction(estado, orgao);
 
   const fila = lastTx.metadata?.fila ? [...lastTx.metadata.fila] : [];
 

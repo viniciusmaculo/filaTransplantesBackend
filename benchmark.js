@@ -1,221 +1,304 @@
+// benchmark.js
+// Este arquivo faz testes de desempenho chamando as rotas reais da API.
+// Aqui eu simulo vários inserts e calls em filas de transplantes
+// e meço quanto tempo cada operação demora (latência).
+// Depois calculo médias, desvios padrão e métricas gerais de desempenho.
+//
+// Como usar:
+//   node benchmark.js <ESTADO> <QTD_FILAS> <QTD_INSERTS> <QTD_CALLS>
+// Exemplo:
+//   node benchmark.js MG 2 10 3
+
 const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
 
-// URL da API que vamos testar
+// URL base da API que será testada
 const API_URL = "http://localhost:3000/transplant";
 
-// Órgãos usados no benchmark de acordo com a quantidade escolhida no terminal
+// Aqui defino quais órgãos testar dependendo da quantidade pedida no terminal
 const ORG_BY_QTD = {
   1: ["rim"],
   2: ["rim", "figado"],
   4: ["rim", "figado", "coracao", "pulmao"]
 };
 
-// Função para pegar o tempo atual em ms
-// Usamos isso para medir a duração de CREATE e TRANSFER
+// Função para medir tempo com alta precisão em milissegundos
+// Uso ela para ver quanto cada operação da API demorou
 const agora = () => {
   const [s, n] = process.hrtime();
-  return s * 1000 + n / 1e6; // converte para milissegundos
+  return s * 1000 + n / 1e6;
 };
 
-// Função para gerar timestamp no padrão brasileiro
-// Ex: 07-12-2025__14h32m55s
+// Função para gerar nomes de arquivos no formato brasileiro (dia-mês-ano)
 function timestampBR() {
   const d = new Date();
-  const dia = String(d.getDate()).padStart(2, "0");
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const ano = d.getFullYear();
-  const hora = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  const seg = String(d.getSeconds()).padStart(2, "0");
-
-  return `${dia}-${mes}-${ano}__${hora}h${min}m${seg}s`;
+  return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}__${String(d.getHours()).padStart(2,"0")}h${String(d.getMinutes()).padStart(2,"0")}m${String(d.getSeconds()).padStart(2,"0")}s`;
 }
 
-// -------------------------------------------------
-// GERADORES DE DADOS – Para simular pacientes
-// -------------------------------------------------
+// Gero dados falsos de pacientes, só para simular carga real
 function gerarCPF(seed) {
-  const base = String(Math.floor(Math.random() * 1e9) + seed).padStart(9, "0");
-  const dv = String(Math.floor(Math.random() * 90)).padStart(2, "0");
-  return base + dv;
+  return String(Math.floor(Math.random() * 1e9) + seed).padStart(11,"0");
 }
 
 function gerarNomeCompleto() {
-  const n = ["Ana", "Paulo", "Julia", "Clara", "Rafael", "Mateus", "João", "Helena", "Bianca"];
-  const s = ["Silva", "Souza", "Pereira", "Costa", "Oliveira", "Santos", "Gomes"];
-  return n[Math.floor(Math.random() * n.length)] + " " + s[Math.floor(Math.random() * s.length)];
+  const n = ["Ana","Paulo","Julia","Clara","Rafael","Mateus","João","Helena","Bianca"];
+  const s = ["Silva","Souza","Pereira","Costa","Oliveira","Santos","Gomes"];
+  return n[Math.floor(Math.random()*n.length)] + " " + s[Math.floor(Math.random()*s.length)];
 }
 
 // -------------------------------------------------
-// ENTRADAS DO TERMINAL
+// LEITURA DOS PARÂMETROS DO TERMINAL
 // -------------------------------------------------
-const estado = (process.argv[2] || "SP").toUpperCase();
-const qtdFilas = Number(process.argv[3]) || 4;  // quantos órgãos testar
-const qtdTrans = Number(process.argv[4]) || 10; // quantas TRANSFER por órgão
 
+// Aqui pego os parâmetros que o usuário digitou
+const estado = (process.argv[2] || "SP").toUpperCase();
+const qtdFilas = Number(process.argv[3]) || 4;
+const qtdInserts = Number(process.argv[4]) || 10;
+const qtdCalls = Number(process.argv[5]) || 0;
+
+// Escolho automaticamente quais órgãos serão testados
 const orgaos = ORG_BY_QTD[qtdFilas] || ORG_BY_QTD[4];
 
+// Só imprimindo no console para o usuário entender o teste que está rodando
 console.log("==================================================");
 console.log("BENCHMARK API - FILA DE TRANSPLANTES");
 console.log("Estado:", estado);
 console.log("Órgãos:", orgaos.join(", "));
-console.log("Transações por órgão:", qtdTrans);
+console.log("Inserções por órgão:", qtdInserts);
+console.log("Chamadas por órgão:", qtdCalls);
 console.log("==================================================");
 
-// Objeto onde vamos armazenar os resultados finais
+// -------------------------------------------------
+// OBJETO QUE VAI GUARDAR TODOS OS RESULTADOS
+// -------------------------------------------------
+
 const result = {
   estado,
   orgaos,
-  transacoes_por_orgao: qtdTrans,
-  create_latencias_ms_por_orgao: {},   // tempo dos CREATE
-  transfer_latencias_ms_por_orgao: {}, // tempo das TRANSFERs
+  insercoes_por_orgao: qtdInserts,
+  calls_por_orgao: qtdCalls,
+
+  // Aqui salvo as listas de tempos de cada operação
+  create_latencias_ms_por_orgao: {},
+  insert_latencias_ms_por_orgao: {},
+  call_latencias_ms_por_orgao: {},
+
   erros: []
 };
 
 // -------------------------------------------------
-// Funções que chamam a API
+// FUNÇÕES QUE CHAMAM A API REAL
 // -------------------------------------------------
+
+// Consulta a fila
 async function apiGetFila(estado, orgao) {
   return (await fetch(`${API_URL}/${estado}/${orgao}`)).json();
 }
 
+// Cria a fila se não existir
 async function apiCreateFila(estado, orgao) {
-  // POST que cria a fila vazia
-  return (
-    await fetch(`${API_URL}/${estado}/${orgao}/create`, {
-      method: "POST"
-    })
-  ).json();
+  return (await fetch(`${API_URL}/${estado}/${orgao}/create`, { method:"POST" })).json();
 }
 
-async function apiAddPatient(estado, orgao, cpf, nome) {
-  // POST que adiciona paciente (TRANSFER)
+// Adiciona paciente (INSERT)
+async function apiInsert(estado, orgao, cpf, nome) {
   return (
     await fetch(`${API_URL}/${estado}/${orgao}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cpf, nome, usuario: "benchmark" })
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ cpf, nome, usuario:"benchmark" })
+    })
+  ).json();
+}
+
+// Chama o próximo paciente (CALL)
+async function apiCallNext(estado, orgao) {
+  return (
+    await fetch(`${API_URL}/${estado}/${orgao}/next`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ usuario:"benchmark" })
     })
   ).json();
 }
 
 // -------------------------------------------------
-// Função principal que testa cada órgão
+// FUNÇÕES DE ESTATÍSTICAS
 // -------------------------------------------------
+
+// Calcula média de latências
+function media(lista) {
+  const v = lista.filter(x => x != null);
+  if (!v.length) return null;
+  return v.reduce((s,x) => s+x, 0) / v.length;
+}
+
+// Calcula desvio padrão
+function desvioPadrao(lista) {
+  const v = lista.filter(x => x != null);
+  if (!v.length) return null;
+  const m = media(v);
+  const variancia = v.reduce((s,x)=>s+(x-m)**2,0) / v.length;
+  return Math.sqrt(variancia);
+}
+
+// -------------------------------------------------
+// FUNÇÃO QUE TESTA UM ÓRGÃO ESPECÍFICO
+// -------------------------------------------------
+
 async function testarOrgao(orgao, idx) {
-  const latCreate = [];   // guarda tempos do CREATE
-  const latTransfer = []; // guarda tempos das TRANSFERs
+  // Aqui vou guardar os tempos de cada ação
+  const latCreate = [];
+  const latInsert = [];
+  const latCall = [];
 
   try {
-    console.log(`Iniciando testes para ${orgao}...`);
+    console.log(`\n>>> Testando órgão: ${orgao}...`);
 
-    // Verifica se a fila já existe consultando a API
+    // Primeiro verifico se a fila existe
     const existente = await apiGetFila(estado, orgao);
 
-    // Se a fila não existe nós criamos ela
+    // Se não existe, crio e meço o tempo
     if (!existente || existente.error) {
       const t0 = agora();
       await apiCreateFila(estado, orgao);
       const t1 = agora();
-
-      const lat = t1 - t0; // tempo gasto
-      latCreate.push(lat);
-
-      console.log(`CREATE (${orgao}) em ${lat.toFixed(2)} ms`);
+      latCreate.push(t1 - t0);
+      console.log(`  CREATE ${orgao} em ${latCreate[0].toFixed(2)} ms`);
     } else {
-      // Se já existe, não medimos CREATE
+      // Se já existe, não preciso criar de novo
       latCreate.push(null);
-      console.log(`Fila ${orgao} já existe — CREATE ignorado.`);
+      console.log(`  CREATE ${orgao} ignorado (fila já existe)`);
     }
 
-    // Agora executamos várias TRANSFERs (uma por vez)
-    for (let i = 0; i < qtdTrans; i++) {
-      const t2 = agora();
-      await apiAddPatient(estado, orgao, gerarCPF(idx + i + Date.now()), gerarNomeCompleto());
-      const t3 = agora();
-
-      const lat = t3 - t2;
-      latTransfer.push(lat);
-
-      console.log(`TRANSFER ${orgao} #${i + 1} em ${lat.toFixed(2)} ms`);
+    // Agora faço todos os INSERTs
+    for (let i = 0; i < qtdInserts; i++) {
+      const t0 = agora();
+      await apiInsert(estado, orgao, gerarCPF(idx+i+Date.now()), gerarNomeCompleto());
+      const t1 = agora();
+      latInsert.push(t1 - t0);
+      console.log(`  INSERT ${orgao} #${i+1} em ${latInsert[i].toFixed(2)} ms`);
     }
+
+    // Depois faço todos os CALLs (chamar o próximo)
+    for (let j = 0; j < qtdCalls; j++) {
+      const t0 = agora();
+      await apiCallNext(estado, orgao);
+      const t1 = agora();
+      latCall.push(t1 - t0);
+      console.log(`  CALL (next) ${orgao} #${j+1} em ${latCall[j].toFixed(2)} ms`);
+    }
+
   } catch (err) {
-    console.log(`ERRO no órgão ${orgao}: ${err.message}`);
+    // Se der erro em algum órgão, salvo para analisar depois
     result.erros.push({ orgao, erro: err.message });
   }
 
-  // Salvamos os tempos no resultado final
+  // Aqui armazeno tudo no objeto final
   result.create_latencias_ms_por_orgao[orgao] = latCreate;
-  result.transfer_latencias_ms_por_orgao[orgao] = latTransfer;
+  result.insert_latencias_ms_por_orgao[orgao] = latInsert;
+  result.call_latencias_ms_por_orgao[orgao] = latCall;
 }
 
 // -------------------------------------------------
-// Execução principal do benchmark
+// EXECUÇÃO PRINCIPAL DO BENCHMARK
 // -------------------------------------------------
+
 (async () => {
-  const inicio = agora();
 
-  // Executa cada órgão em paralelo para simular múltiplos admins
-  await Promise.all(orgaos.map(testarOrgao));
+  const inicio = agora(); // tempo inicial
 
-  const fim = agora();
-  const totalMs = fim - inicio;
-  const totalSeg = totalMs / 1000;
+  // Executo cada fila do estado em paralelo
+  await Promise.all(orgaos.map((o,i) => testarOrgao(o,i)));
 
-  // Função que calcula média das latências
-  function media(lista) {
-    const validos = lista.filter(v => v != null);
-    if (!validos.length) return null;
-    return validos.reduce((s, v) => s + v, 0) / validos.length;
-  }
+  const fim = agora(); // tempo final
+  const totalSeg = (fim - inicio) / 1000;
 
-  let totalTx = 0;
-  let mediasTransfer = {};
+  // Aqui calculo todas as métricas por órgão e globais
+  const insert_media_ms_por_orgao = {};
+  const insert_desvio_ms_por_orgao = {};
+  const call_media_ms_por_orgao = {};
+  const call_desvio_ms_por_orgao = {};
+  const total_media_ms_por_orgao = {};
+  const total_desvio_ms_por_orgao = {};
 
-  // Para cada órgão...
+  let totalTx = 0; // total de transações realizadas
+  let todas_latencias_totais = []; // para métricas globais
+
+  // Para cada órgão calculo as estatísticas
   orgaos.forEach(org => {
-    const c = result.create_latencias_ms_por_orgao[org];
-    const t = result.transfer_latencias_ms_por_orgao[org];
+    const creates = result.create_latencias_ms_por_orgao[org];
+    const inserts = result.insert_latencias_ms_por_orgao[org];
+    const calls = result.call_latencias_ms_por_orgao[org];
 
-    mediasTransfer[org] = media(t); // média das TRANSFERs
+    // Cálculo das médias e desvios
+    insert_media_ms_por_orgao[org] = media(inserts);
+    insert_desvio_ms_por_orgao[org] = desvioPadrao(inserts);
 
-    totalTx += c.filter(x => x != null).length; // conta CREATE
-    totalTx += t.filter(x => x != null).length; // conta TRANSFER
+    call_media_ms_por_orgao[org] = media(calls);
+    call_desvio_ms_por_orgao[org] = desvioPadrao(calls);
+
+    // Junto inserts + calls para obter a métrica total da fila
+    const totalFila = [...inserts, ...calls].filter(v => v != null);
+    total_media_ms_por_orgao[org] = media(totalFila);
+    total_desvio_ms_por_orgao[org] = desvioPadrao(totalFila);
+
+    todas_latencias_totais.push(...totalFila);
+
+    // Conto número total de transações feitas
+    totalTx += creates.filter(x=>x!=null).length;
+    totalTx += inserts.length;
+    totalTx += calls.length;
   });
 
-  const throughput = totalTx / totalSeg; // tx/s
+  // Agora calculo as métricas globais (todas as filas juntas)
+  const total_media_ms_global = media(todas_latencias_totais);
+  const total_desvio_ms_global = desvioPadrao(todas_latencias_totais);
 
-  // Objeto final que será salvo no JSON
+  // Throughput = transações por segundo
+  const throughput = totalTx / totalSeg;
+
+  // P/ salvar no JSON final
   const resumo = {
     estado,
     orgaos,
-    transacoes_por_orgao: qtdTrans,
+    insercoes_por_orgao: qtdInserts,
+    calls_por_orgao: qtdCalls,
 
     tempo_total_seg: Number(totalSeg.toFixed(3)),
     total_transacoes: totalTx,
     throughput_tx_s: Number(throughput.toFixed(3)),
 
-    latencia_media_transfer_ms_por_orgao: mediasTransfer,
+    insert_media_ms_por_orgao,
+    insert_desvio_ms_por_orgao,
+    call_media_ms_por_orgao,
+    call_desvio_ms_por_orgao,
+    total_media_ms_por_orgao,
+    total_desvio_ms_por_orgao,
+
+    total_media_ms_global,
+    total_desvio_ms_global,
 
     create_latencias_ms_por_orgao: result.create_latencias_ms_por_orgao,
-    transfer_latencias_ms_por_orgao: result.transfer_latencias_ms_por_orgao,
+    insert_latencias_ms_por_orgao: result.insert_latencias_ms_por_orgao,
+    call_latencias_ms_por_orgao: result.call_latencias_ms_por_orgao,
 
     erros: result.erros
   };
 
-  // Cria pasta se não existir
+  // Crio pasta de resultados se ainda não existir
   const pasta = path.join(__dirname, "benchmark-results-api");
   if (!fs.existsSync(pasta)) fs.mkdirSync(pasta);
 
-  // Nome do arquivo no padrão brasileiro
-  const nomeArquivo = `${estado}_${orgaos.length}_${qtdTrans}_${timestampBR()}.json`;
-
+  // Nome do arquivo com timestamp BR
+  const nomeArquivo = `${estado}_${orgaos.length}_${qtdInserts}_${qtdCalls}_${timestampBR()}.json`;
   fs.writeFileSync(path.join(pasta, nomeArquivo), JSON.stringify(resumo, null, 2));
 
+  // Resumo no console
   console.log("\n==================================================");
   console.log("BENCHMARK FINALIZADO!");
+  console.log("Arquivo salvo em:", nomeArquivo);
   console.log("Total de transações:", totalTx);
   console.log("Tempo total:", totalSeg.toFixed(3), "s");
   console.log("Throughput:", throughput.toFixed(3), "tx/s");
