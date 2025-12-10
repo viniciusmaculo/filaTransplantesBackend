@@ -18,7 +18,9 @@ function cacheKey(estado, orgao) {
   return `${estado}-${orgao}`;
 }
 
+// ------------------------------------------------------------
 // BUSCA DO ASSET
+// ------------------------------------------------------------
 async function findAssetByStateAndOrgan(estado, orgao) {
 
   const key = cacheKey(estado, orgao);
