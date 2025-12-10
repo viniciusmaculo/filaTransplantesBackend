@@ -1,4 +1,3 @@
-// benchmark.js
 // Este arquivo faz testes de desempenho chamando as rotas reais da API.
 // Aqui eu simulo vários inserts e calls em filas de transplantes
 // e meço quanto tempo cada operação demora (latência).
