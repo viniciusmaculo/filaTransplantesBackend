@@ -9,6 +9,7 @@ const { conn } = require('../bigchain/connection');
 const {
   createOrganAsset,
   findAssetByStateAndOrgan,
+  getLastTransaction, 
   addPatient,
   callPatientByPosition,
   callNextPatient
@@ -49,8 +50,7 @@ router.get('/:estado/:orgao', async (req, res) => {
     if (!asset)
       return res.status(404).json({ error: "Fila não encontrada" });
 
-    const txList = await conn.listTransactions(asset.id);
-    const lastTx = txList[txList.length - 1];
+    const lastTx = await getLastTransaction(estado, orgao);
 
     return res.json({
       estado,
@@ -77,9 +77,7 @@ router.post('/:estado/:orgao', async (req, res) => {
     const txId = await addPatient(estado, orgao, cpf, nome, usuario);
 
     // Busca o estado atualizado
-    const asset = await findAssetByStateAndOrgan(estado, orgao);
-    const txList = await conn.listTransactions(asset.id);
-    const lastTx = txList[txList.length - 1];
+    const lastTx = await getLastTransaction(estado, orgao);
 
     return res.json({
       success: true,
@@ -128,8 +126,7 @@ router.post('/:estado/:orgao/next', async (req, res) => {
     const txId = await callNextPatient(estado, orgao, usuario);
 
     // Busca o estado após a atualização
-    const txList = await conn.listTransactions(asset.id);
-    const lastTx = txList[txList.length - 1];
+    const lastTx = await getLastTransaction(estado, orgao);
 
     return res.json({
       success: true,
