@@ -1,5 +1,3 @@
-// bigchain/keys.js
-
 // Biblioteca para ler e escrever arquivos no sistema
 const fs = require('fs');
 const path = require('path');

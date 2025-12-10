@@ -1,5 +1,3 @@
-// utils/masking.js
-
 // mascara o CPF
 function maskCPF(cpf) {
     return `***.${cpf.slice(3,6)}.${cpf.slice(6,9)}-**`;

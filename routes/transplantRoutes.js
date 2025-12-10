@@ -1,5 +1,3 @@
-// routes/transplantRoutes.js
-
 // Express para criar rotas HTTP
 const express = require('express');
 const router = express.Router();

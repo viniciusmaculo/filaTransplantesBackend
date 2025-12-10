@@ -1,5 +1,3 @@
-// index.js
-
 // Configuramos um servidor Express na porta 3000, com rotas para '/transplant' definidas em 'transplantRoutes.js'.
 
 const express = require('express');

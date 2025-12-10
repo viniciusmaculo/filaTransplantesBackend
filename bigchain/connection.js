@@ -1,5 +1,3 @@
-// bigchain/connection.js
-
 // Conexão com BigchainDB
 const BigchainDB = require('bigchaindb-driver');
 
