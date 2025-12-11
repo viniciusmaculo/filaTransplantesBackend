@@ -14,5 +14,25 @@
   "ES": {
     "publicKey": "14CiHBPuiv55UndrdNGx1To8gFVZxwDHYvAo4k5VQu1V",
     "privateKey": "2FJZKP7uLmy77C9bXHcXxWySuKqvCznMmfUynNELdPNu"
+  },
+  "rj": {
+    "publicKey": "CNC37arB7U9oiMEsqadFmehy67q1SttL4vn1m9RbPxVp",
+    "privateKey": "5PiuwaTsshiXe52mnj4GjK4vWdP4LqNFtr8kZEZThajY"
+  },
+  "RJ3": {
+    "publicKey": "CgL7BXxGp8FT2AeRYunaRLXX8CU2Dx3VgUsLDJBzNZMg",
+    "privateKey": "3W7cvG9K8stdVpSi8V9gp5p6rCxuMqBktwzfqvJDL1wh"
+  },
+  "SP3": {
+    "publicKey": "EKmLpPv5385vHP7To7aAzvKFFHs1QeVAwkh97ArFKMPU",
+    "privateKey": "9quzSNRXNun8yTxpx71S1mYCXuf6MJKNspcFhDU2a1ez"
+  },
+  "MG3": {
+    "publicKey": "UC4cUNBjq4R8PF1qcstaGPynYAf8TG2t7oWgQMgSuwv",
+    "privateKey": "7qBizwF8R7oDQoYd7aXeB8eE5cFvxFnSt1x6NsNbDoW2"
+  },
+  "ES3": {
+    "publicKey": "E4NeGXHU68qv7sUVh3rouPqBWfbqjUTyF6F6rdXwyoPU",
+    "privateKey": "2ykgpw2qD4bt8hYb17UepdJBeoKMwMGwZz436natm8uY"
   }
 }
