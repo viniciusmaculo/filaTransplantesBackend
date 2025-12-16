@@ -19,10 +19,6 @@ router.post('/:estado/:orgao/create', async (req, res) => {
   const { estado, orgao } = req.params;
 
   try {
-    // Verifica se já existe
-    const existente = await findAssetByStateAndOrgan(estado, orgao);
-    if (existente)
-      return res.status(400).json({ error: "Fila já existe — não é possível recriar." });
 
     const txId = await createOrganAsset(estado, orgao);
 

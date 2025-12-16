@@ -1,54 +1,68 @@
 const { conn, BigchainDB } = require('./connection');
 const { createKeysForState, getKeysForState } = require('./keys');
 const { createPatient } = require('../utils/masking');
+const fs = require('fs');
+const path = require('path');
 
+// Cache de assets em um arquivo .json
+const ASSETS_FILE = path.join(__dirname, '../assets.json');
+
+let assetCache = {};
+
+// Carrega assets do disco se existir
+if (fs.existsSync(ASSETS_FILE)) {
+  try {
+    assetCache = JSON.parse(fs.readFileSync(ASSETS_FILE));
+  } catch (err) {
+    console.error("Erro ao ler assets.json", err);
+    assetCache = {};
+  }
+}
+
+// Salva assets no disco
+function saveAssets() {
+  fs.writeFileSync(ASSETS_FILE, JSON.stringify(assetCache, null, 2));
+}
 
 // CACHE EM MEMÓRIA
-// Solução para não chamarmos listTransactions() toda hora
 
 // Guarda apenas o último tx_id de cada fila
 // Ex: lastTxCache["RJ-rim"] = "abcd1234"
 const lastTxCache = {};
-
-// Cache para armazenar asset.id por estado+órgão
-const assetCache = {}; 
 
 // Gera a chave para armazenar os IDs em cache
 function cacheKey(estado, orgao) {
   return `${estado}-${orgao}`;
 }
 
-// ------------------------------------------------------------
 // BUSCA DO ASSET
-// ------------------------------------------------------------
 async function findAssetByStateAndOrgan(estado, orgao) {
-
   const key = cacheKey(estado, orgao);
 
-  // 1 Se estiver no cache retorna direto
   if (assetCache[key]) {
-    return { id: assetCache[key], data: { estado, orgao, tipo: "fila-transplantes" } };
+    return {
+      id: assetCache[key],
+      data: {
+        tipo: "fila-transplantes",
+        estado,
+        orgao
+      }
+    };
   }
 
-  // 2 Caso não esteja, busca apenas uma vez
-  const assets = await conn.searchAssets(estado);
-
-  const found = assets.find(a =>
-    a.data &&
-    a.data.tipo === 'fila-transplantes' &&
-    a.data.estado === estado &&
-    a.data.orgao === orgao
-  );
-
-  // Guardar no cache
-  if (found) assetCache[key] = found.id;
-
-  return found || null;
+  return null;
 }
 
  // 1. CRIAMOS O PRIMEIRO ASSET DO ÓRGÃO NO ESTADO (primeira versão da fila)
  // Recebe dois parâmetros: estado (UF) e orgao (ex: 'rim')
 async function createOrganAsset(estado, orgao) {
+
+  const key = cacheKey(estado, orgao);
+
+  if (assetCache[key]) {
+    throw new Error("Fila já existe para este estado e órgão.");
+  }
+
   let keyPair = getKeysForState(estado);
 
   // Gera ou recupera o par de chaves do ESTADO (só o estado tem a private key)
@@ -95,7 +109,10 @@ async function createOrganAsset(estado, orgao) {
   assetCache[cacheKey(estado, orgao)] = signed.id;
 
   // Guarda o id da primeira transação no cache
-  lastTxCache[cacheKey(estado, orgao)] = signed.id;
+  assetCache[key] = signed.id;
+  saveAssets();
+
+  lastTxCache[key] = signed.id;
 
   return signed.id;
 }

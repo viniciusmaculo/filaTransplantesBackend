@@ -34,5 +34,9 @@
   "ES3": {
     "publicKey": "E4NeGXHU68qv7sUVh3rouPqBWfbqjUTyF6F6rdXwyoPU",
     "privateKey": "2ykgpw2qD4bt8hYb17UepdJBeoKMwMGwZz436natm8uY"
+  },
+  "TO": {
+    "publicKey": "H2TQnYstpPx9rXbiuvK2xHCFRfRupToQPMjtfD93UCEA",
+    "privateKey": "FmpMjrn3TuNdBNBCeKACxsHMT6C67oDoTnAmvxrswwJ2"
   }
 }
